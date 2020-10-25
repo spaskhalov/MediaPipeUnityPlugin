@@ -2,24 +2,41 @@ using System;
 using UnityEngine;
 
 public class WebCamScreenController : MonoBehaviour {
-  [SerializeField] int DefaultHeight = 640;
-  [SerializeField] int DefaultWidth = 480;
-  [SerializeField] int FPS = 30;
-  [SerializeField] float focalLengthPx = 2.0f;
+  [SerializeField] int defaultWidth = 640;
+  [SerializeField] int defaultHeight = 480;
+  [SerializeField] int fps = 30;
+  [SerializeField] float defaultFocalLengthPx = 2.0f;
 
+  private WebCamDevice webCamDevice;
   private WebCamTexture webCamTexture;
   private Texture2D outputTexture;
   private Color32[] pixelData;
 
+  public int width { get; private set; }
+  public int height { get; private set; }
+  public bool isPlaying {
+    get { return webCamTexture == null ? false : webCamTexture.isPlaying; }
+  }
+
+  void Start() {
+    this.width = defaultWidth;
+    this.height = defaultHeight;
+  }
+
   public void ResetScreen(WebCamDevice? device) {
-    if (webCamTexture != null && webCamTexture.isPlaying) {
+    if (isPlaying) {
       webCamTexture.Stop();
       webCamTexture = null;
     }
 
-    if (device == null) return;
+    if (device is WebCamDevice deviceValue) {
+      webCamDevice = deviceValue;
+    } else {
+      return;
+    }
 
-    webCamTexture = new WebCamTexture(device?.name, DefaultHeight, DefaultWidth, FPS);
+    GetComponent<TextureFramePool>().SetDimension(width, height);
+    webCamTexture = new WebCamTexture(device?.name, width, height, fps);
 
     try {
       webCamTexture.Play();
@@ -29,30 +46,33 @@ public class WebCamScreenController : MonoBehaviour {
     }
 
     Renderer renderer = GetComponent<Renderer>();
-    outputTexture = new Texture2D(webCamTexture.width, webCamTexture.height);
+    outputTexture = new Texture2D(webCamTexture.width, webCamTexture.height, TextureFormat.BGRA32, false);
     renderer.material.mainTexture = outputTexture;
 
     pixelData = new Color32[webCamTexture.width * webCamTexture.height];
   }
 
-  public bool IsPlaying() {
-    return webCamTexture == null ? false : webCamTexture.isPlaying;
+  public void ChangeDimension(int width, int height) {
+    this.width = width;
+    this.height = height;
+
+    ResetScreen(webCamDevice);
   }
 
-  public int Height() {
-    return IsPlaying() ? webCamTexture.height : 0;
-  }
-
-  public int Width() {
-    return IsPlaying() ? webCamTexture.width : 0;
-  }
-
-  public float FocalLengthPx() {
-    return IsPlaying() ? focalLengthPx : 0;
+  public float GetFocalLengthPx() {
+    return isPlaying ? defaultFocalLengthPx : 0;
   }
 
   public Color32[] GetPixels32() {
-    return IsPlaying() ? webCamTexture.GetPixels32(pixelData) : null;
+    return isPlaying ? webCamTexture.GetPixels32(pixelData) : null;
+  }
+
+  public Color[] GetPixels() {
+    return isPlaying ? webCamTexture.GetPixels() : null;
+  }
+
+  public IntPtr GetNativeTexturePtr() {
+    return webCamTexture.GetNativeTexturePtr();
   }
 
   public Texture2D GetScreen() {
@@ -63,5 +83,24 @@ public class WebCamScreenController : MonoBehaviour {
     // TODO: size assertion
     outputTexture.SetPixels32(colors);
     outputTexture.Apply();
+  }
+
+  public void DrawScreen(TextureFrame src) {
+    // TODO: size assertion
+    src.CopyTexture(outputTexture);
+  }
+
+  public TextureFramePool.TextureFrameRequest RequestNextFrame() {
+    return GetComponent<TextureFramePool>().RequestNextTextureFrame((TextureFrame textureFrame) => {
+      textureFrame.CopyTextureFrom(webCamTexture);
+    });
+  }
+
+  public void OnReleaseFrame(TextureFrame textureFrame) {
+    GetComponent<TextureFramePool>().OnTextureFrameReleased(textureFrame);
+  }
+
+  private void CopyWebCamTexture(Texture dst) {
+    Graphics.CopyTexture(webCamTexture, dst);
   }
 }

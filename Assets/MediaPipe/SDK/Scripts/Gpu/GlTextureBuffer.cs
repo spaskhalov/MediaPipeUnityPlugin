@@ -1,9 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-using MpGlContext = System.IntPtr;
 using MpGlTextureBuffer = System.IntPtr;
 using GlSyncTokenPtr = System.IntPtr;
+using UnityEngine;
 
 namespace Mediapipe {
   public class GlTextureBuffer : ResourceHandle {
@@ -13,35 +13,31 @@ namespace Mediapipe {
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate void DeletionCallback(GlSyncTokenPtr ptr);
-    private GCHandle deletionCallbackHandle;
 
     private GlTextureBuffer(MpGlTextureBuffer ptr) : base(ptr) {}
 
     public GlTextureBuffer(UInt32 target, UInt32 name, int width, int height,
-        GpuBufferFormat format, DeletionCallback callback, MpGlContext glContext)
+        GpuBufferFormat format, DeletionCallback callback, GlContext glContext)
     {
-      deletionCallbackHandle = GCHandle.Alloc(callback, GCHandleType.Pinned);
       ptr = UnsafeNativeMethods.MpGlTextureBufferCreate(
-        target, name, width, height, (UInt32)format, Marshal.GetFunctionPointerForDelegate(callback), glContext);
+        target, name, width, height, (UInt32)format,
+        Marshal.GetFunctionPointerForDelegate(callback),
+        glContext == null ? IntPtr.Zero : glContext.GetPtr());
 
       base.TakeOwnership(ptr);
     }
 
-    public GlTextureBuffer(UInt32 name, int width, int height, GpuBufferFormat format, DeletionCallback callback, MpGlContext glContext) :
+    public GlTextureBuffer(UInt32 name, int width, int height, GpuBufferFormat format, DeletionCallback callback, GlContext glContext) :
         this(GL_TEXTURE_2D, name, width, height, format, callback, glContext) {}
 
     public GlTextureBuffer(UInt32 name, int width, int height, GpuBufferFormat format, DeletionCallback callback) :
-        this(name, width, height, format, callback, IntPtr.Zero) {}
+        this(name, width, height, format, callback, null) {}
 
     protected override void Dispose(bool disposing) {
       if (_disposed) return;
 
       if (OwnsResource()) {
         UnsafeNativeMethods.MpGlTextureBufferDestroy(ptr);
-      }
-
-      if (deletionCallbackHandle != null && deletionCallbackHandle.IsAllocated) {
-        deletionCallbackHandle.Free();
       }
 
       ptr = IntPtr.Zero;

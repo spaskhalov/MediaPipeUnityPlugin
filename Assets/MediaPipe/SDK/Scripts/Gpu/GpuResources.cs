@@ -25,6 +25,10 @@ namespace Mediapipe {
       return UnsafeNativeMethods.MpGpuResourcesGet(ptr);
     }
 
+    public GlContext GlContext() {
+      return new GlContext(UnsafeNativeMethods.MpGpuResourcesGlContext(ptr));
+    }
+
     public static StatusOrGpuResources Create() {
       var ptr = UnsafeNativeMethods.MpGpuResourcesCreate();
 

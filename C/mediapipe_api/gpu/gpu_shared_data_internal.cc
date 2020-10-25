@@ -8,6 +8,10 @@ mediapipe::GpuResources* MpGpuResourcesGet(MpGpuResources* gpu_resources) {
   return gpu_resources->impl.get();
 }
 
+MpGlContext* MpGpuResourcesGlContext(MpGpuResources* gpu_resources) {
+  return new MpGlContext { gpu_resources->impl->gl_context() };
+}
+
 MpStatusOrGpuResources* MpGpuResourcesCreate() {
   auto status_or_gpu_resources = mediapipe::GpuResources::Create();
   auto status = status_or_gpu_resources.status();

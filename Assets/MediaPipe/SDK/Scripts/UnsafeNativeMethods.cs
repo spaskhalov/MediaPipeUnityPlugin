@@ -245,6 +245,9 @@ namespace Mediapipe {
     public static extern unsafe GpuResourcesPtr MpGpuResourcesGet(MpGpuResources gpuResources);
 
     [DllImport (MediaPipeLibrary)]
+    public static extern unsafe MpGlContext MpGpuResourcesGlContext(MpGpuResources gpuResources);
+
+    [DllImport (MediaPipeLibrary)]
     public static extern unsafe MpStatusOrGpuResources MpGpuResourcesCreate();
 
     [DllImport (MediaPipeLibrary)]

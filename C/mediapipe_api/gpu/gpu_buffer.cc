@@ -2,7 +2,7 @@
 #include "mediapipe_api/gpu/gpu_buffer.h"
 
 mediapipe::GpuBuffer* MpGpuBufferCreate(MpGlTextureBuffer* gl_texture_buffer) {
-  return new mediapipe::GpuBuffer { gl_texture_buffer->impl };
+  return new mediapipe::GpuBuffer { std::move(gl_texture_buffer->impl) };
 }
 
 void MpGpuBufferDestroy(mediapipe::GpuBuffer* gpu_buffer) {

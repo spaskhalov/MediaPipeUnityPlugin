@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class DemoGraph : MonoBehaviour, IDemoGraph<PixelData> {
+public abstract class DemoGraph : MonoBehaviour, IDemoGraph<TextureFrame> {
   [SerializeField] protected TextAsset config = null;
 
   protected const string inputStream = "input_video";
@@ -34,32 +34,31 @@ public abstract class DemoGraph : MonoBehaviour, IDemoGraph<PixelData> {
   /// <summary>
   ///   Convert <paramref name="colors" /> to a packet and send it to the input stream.
   /// </summary>
-  public Status PushInput(PixelData pixelData) {
+  public Status PushInput(TextureFrame textureFrame) {
     int timestamp = System.Environment.TickCount & System.Int32.MaxValue;
-    var imageFrame = ImageFrame.FromPixels32(pixelData.Colors, pixelData.Width, pixelData.Height, true);
 
     if (!IsGpuEnabled()) {
+      var imageFrame = ImageFrame.FromPixels32(textureFrame.GetPixels32(), textureFrame.width, textureFrame.height, true);
       var packet = new ImageFramePacket(imageFrame, timestamp);
 
       return graph.AddPacketToInputStream(inputStream, packet);
     }
 
-    var status = gpuHelper.RunInGlContext(() => {
-      var texture = gpuHelper.CreateSourceTexture(imageFrame);
+    var gpuResources = graph.GetGpuResources();
+    var glTextureName = textureFrame.GetNativeTexturePtr();
+    var glTextureBuffer = new GlTextureBuffer((UInt32)glTextureName, textureFrame.width, textureFrame.height,
+                                              textureFrame.gpuBufferformat, textureFrame.OnRelease, gpuResources.GlContext());
+    var gpuBuffer = new GpuBuffer(glTextureBuffer);
+
+    return gpuHelper.RunInGlContext(() => {
+      var texture = gpuHelper.CreateSourceTexture(gpuBuffer);
       var gpuFrame = texture.GetGpuBufferFrame();
 
-      UnsafeNativeMethods.GlFlush();
-      texture.Release();
-
-      return graph.AddPacketToInputStream(inputStream, new GpuBufferPacket(gpuFrame, timestamp));
+      return graph.AddPacketToInputStream(inputStream, new GpuBufferPacket(gpuBuffer, timestamp));
     });
-
-    imageFrame.Dispose();
-
-    return status;
   }
 
-  public abstract void RenderOutput(WebCamScreenController screenController, PixelData pixelData);
+  public abstract void RenderOutput(WebCamScreenController screenController, TextureFrame textureFrame);
 
   public void Stop() {
     if (graph != null) {

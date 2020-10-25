@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 using GpuBufferPtr = System.IntPtr;
 
@@ -8,10 +9,12 @@ namespace Mediapipe {
  
     public GpuBuffer(GpuBufferPtr ptr, bool isOwner = true) : base(ptr, isOwner) {}
 
-    // TODO: investigate glTextureBuffer's state after initialization
-    public GpuBuffer(GlTextureBuffer glTextureBuffer) : base(UnsafeNativeMethods.MpGpuBufferCreate(glTextureBuffer.GetPtr())) {}
+    public GpuBuffer(GlTextureBuffer glTextureBuffer) : base(UnsafeNativeMethods.MpGpuBufferCreate(glTextureBuffer.GetPtr())) {
+      // TODO: invalidate glTextureBuffer's ptr
+    }
 
     protected override void Dispose(bool disposing) {
+      Debug.Log("Destroy GpuBuffer");
       if (_disposed) return;
 
       if (OwnsResource()) {

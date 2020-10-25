@@ -7,6 +7,7 @@
 #include "mediapipe_api/common.h"
 #include "mediapipe_api/framework/port/status.h"
 #include "mediapipe_api/framework/port/statusor.h"
+#include "mediapipe_api/gpu/gl_context.h"
 
 extern "C" {
 
@@ -17,6 +18,7 @@ typedef MpStatusOrValue<std::unique_ptr<MpGpuResources>> MpStatusOrGpuResources;
 
 MP_CAPI_EXPORT extern void MpGpuResourcesDestroy(MpGpuResources* gpu_resources);
 MP_CAPI_EXPORT extern mediapipe::GpuResources* MpGpuResourcesGet(MpGpuResources* gpu_resources);
+MP_CAPI_EXPORT extern MpGlContext* MpGpuResourcesGlContext(MpGpuResources* gpu_resources);
 
 MP_CAPI_EXPORT extern MpStatusOrGpuResources* MpGpuResourcesCreate();
 MP_CAPI_EXPORT extern void MpStatusOrGpuResourcesDestroy(MpStatusOrGpuResources* status_or_gpu_resources);

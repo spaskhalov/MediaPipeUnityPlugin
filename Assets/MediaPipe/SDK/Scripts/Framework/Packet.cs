@@ -18,7 +18,7 @@ namespace Mediapipe {
       if (_disposed) return;
 
       if (OwnsResource()) {
-        UnsafeNativeMethods.MpPacketDestroy(ptr);
+        // UnsafeNativeMethods.MpPacketDestroy(ptr);
       }
 
       ptr = IntPtr.Zero;
