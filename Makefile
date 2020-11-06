@@ -8,7 +8,7 @@ modeldir := $(sdkdir)/Models
 scriptdir := $(sdkdir)/Scripts
 
 bazelflags.gpu := --copt -DMESA_EGL_NO_X11_HEADERS --copt -DEGL_NO_X11
-bazelflags.cpu := --define MEDIAPIPE_DISABLE_GPU=1
+bazelflags.cpu := --define MEDIAPIPE_DISABLE_GPU=1 
 bazelflags.android_arm := --config=android_arm
 baseltarget.model = //mediapipe_api:mediapipe_models
 
@@ -24,7 +24,7 @@ protobuf_dll := $(protobuf_bindir)/Google.Protobuf.dll
 bazel_root := C/bazel-bin/mediapipe_api
 bazel_models_target := //mediapipe_api:mediapipe_models
 bazel_protos_target := //mediapipe_api:mediapipe_proto_srcs
-bazel_common_target := $(bazel_models_target) $(bazel_protos_target)
+bazel_common_target := $(bazel_models_target) $(bazel_protos_target) --cxxopt='-std=c++14'
 
 .PHONY: all gpu cpu android_arm clean \
 	install install-protobuf install-mediapipe_c install-mediapipe_android install-models \
@@ -32,10 +32,10 @@ bazel_common_target := $(bazel_models_target) $(bazel_protos_target)
 
 # build
 gpu: | $(protobuf_dll)
-	cd C && bazel build -c opt ${bazelflags.gpu} //mediapipe_api:libmediapipe_c.so $(bazel_common_target)
+	cd C && bazel build -c opt ${bazelflags.gpu} //mediapipe_api:libmediapipe_c.dylib $(bazel_common_target)
 
 cpu: | $(protobuf_dll)
-	cd C && bazel build -c opt ${bazelflags.cpu} //mediapipe_api:libmediapipe_c.so $(bazel_common_target)
+	cd C && bazel build -c opt ${bazelflags.cpu} //mediapipe_api:libmediapipe_c.dylib $(bazel_common_target)
 
 android_arm: | $(protobuf_dll)
 	cd C && bazel build -c opt ${bazelflags.android_arm} //mediapipe_api/java/org/homuler/mediapipe/unity:mediapipe_android $(bazel_common_target)
@@ -58,10 +58,10 @@ install-protobuf: | $(plugindir)/Protobuf
 	cp $(protobuf_bindir)/* $(plugindir)/Protobuf
 
 install-mediapipe_c:
-ifneq ("$(wildcard $(bazel_root)/libmediapipe_c.so)", "")
-	cp -f $(bazel_root)/libmediapipe_c.so $(plugindir)
+ifneq ("$(wildcard $(bazel_root)/libmediapipe_c.dylib)", "")
+	cp -f $(bazel_root)/libmediapipe_c.dylib $(plugindir)
 else
-	echo "skip installing libmediapipe_c.so"
+	echo "skip installing libmediapipe_c.dylib"
 endif
 
 install-mediapipe_android:
@@ -91,7 +91,7 @@ uninstall-protobuf:
 	rm -r $(plugindir)/Protobuf
 
 uninstall-mediapipe_c:
-	rm -f $(plugindir)/libmediapipe_c.so
+	rm -f $(plugindir)/libmediapipe_c.dylib
 
 uninstall-mediapipe_android:
 	rm -f $(plugindir)/Android/mediapipe_android.aar
